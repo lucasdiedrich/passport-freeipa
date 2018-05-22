@@ -8,7 +8,7 @@ describe('Strategy', () => {
 
   var strategy = new Strategy(options,() => { });
 
-  it('should be named local', () => {
+  it('should be named freeipa', () => {
     expect(strategy.name).to.equal('freeipa');
   });
 
