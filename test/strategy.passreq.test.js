@@ -1,31 +1,50 @@
 /* global describe, it, expect, before */
 /* jshint expr: true */
 
-var chai = require('chai')
-  , Strategy = require('../src/strategy');
+const chai = require('chai');
+const Strategy = require('../src/strategy');
 
-const options = { server: 'ipa.demo1.freeipa.org', passReqToCallback: true };
+const options = { freeipa: { server: 'ipa.demo1.freeipa.org' } };
 
 describe('Strategy', () => {
-
-  describe('passing request to verify callback', () => {
-    var strategy = new Strategy(options, (req, user, done) => {
-      if (user) {
+  describe('passing request to verify with passReqToCallback', () => {
+    options.passReqToCallback = true;
+    const strategy = new Strategy(options, (req, user, done) => {
+      if (user && user.error === undefined) {
         return done(null, user, { scope: 'read', foo: req.headers['x-foo'] });
       }
-      return done(null, false);
+      return done(null, user);
     });
 
-    it('should supply user and work', (done) => {
+    it('should supply user with callback', (done) => {
       chai.passport.use(strategy)
-        .success((user, req_headers) => {
+        .success((user, reqHeaders) => {
           expect(user.uid.length).to.equal(1);
-          expect(req_headers.foo).to.equal('hello');
+          expect(reqHeaders.foo).to.equal('hello');
           done();
         })
         .req((req) => {
           req.headers['x-foo'] = 'hello';
 
+          req.body = {};
+          req.body.username = 'helpdesk';
+          req.body.password = 'Secret123';
+        })
+        .authenticate();
+    }).timeout(3000);
+  });
+
+  describe('passing request to verify without passReqToCallback', () => {
+    options.passReqToCallback = false;
+    const strategy = new Strategy(options, (user, done) => done(null, user));
+
+    it('should supply user without callback', (done) => {
+      chai.passport.use(strategy)
+        .success((user) => {
+          expect(user.uid.length).to.equal(1);
+          done();
+        })
+        .req((req) => {
           req.body = {};
           req.body.username = 'helpdesk';
           req.body.password = 'Secret123';

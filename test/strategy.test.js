@@ -1,27 +1,19 @@
 /* global describe, it, expect */
 
-var Strategy = require('../src/strategy');
+const Strategy = require('../src/strategy');
 
-const options = { server: 'nonexistserver' }
+const options = { freeipa: { server: 'nonexistserver' } };
 
 describe('Strategy', () => {
-
-  var strategy = new Strategy(options,() => { });
+  const strategy = new Strategy(options, () => { });
 
   it('should be named freeipa', () => {
     expect(strategy.name).to.equal('freeipa');
   });
 
-  it('should throw if constructed without a verify callback', () => {
-    expect(() => {
-      var s = new Strategy(options);
-    }).to.throw(TypeError, 'FreeipaStrategy requires a verify callback');
-  });
-
   it('should throw if constructed without server options', () => {
     expect(() => {
-      var s = new Strategy(null, () => {});
-    }).to.throw(TypeError, 'FreeipaStrategy requires the server options');
+      const s = new Strategy(null, () => {});
+    }).to.throw(TypeError, 'Passport-Freeipa: requires the node-freeipa options');
   });
-
 });

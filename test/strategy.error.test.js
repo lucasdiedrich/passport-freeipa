@@ -2,16 +2,16 @@
 
 const chai = require('chai');
 const Strategy = require('../src/strategy');
-const options = { server: 'invalid_server' }
 
-describe('Strategy', () =>  {
+const options = { freeipa: { server: 'invalid_server' } };
 
-  describe('encountering an error during verification', () =>  {
-    var strategy = new Strategy(options, (user, done) => {
+describe('Strategy', () => {
+  describe('encountering an error during verification', () => {
+    const strategy = new Strategy(options, (user, done) => {
       done(new Error('something went wrong'));
     });
 
-    var err;
+    let err;
     before((done) => {
       chai.passport.use(strategy)
         .error((e) => {
@@ -26,61 +26,53 @@ describe('Strategy', () =>  {
         .authenticate();
     });
 
-    it('should error', () =>  {
+    it('should error', () => {
       expect(err).to.be.an.instanceof(Error);
       expect(err.message).to.equal('Freeipa: problem with request: getaddrinfo ENOTFOUND invalid_server invalid_server:443');
     });
   });
 
-  describe('encountering an exception during verification', () =>  {
-    var strategy = new Strategy(options, (user, done) => {
-      throw new Error('something went horribly wrong');
+  describe('will fail with no password is provided', () => {
+    const strategy = new Strategy(options, (user, done) => {
+      done(new Error('something went horribly wrong'));
     });
 
-    var err;
+    let err;
 
-    before(function(done) {
+    before((done) => {
       chai.passport.use(strategy)
-        .error(function(e) {
+        .fail((e) => {
           err = e;
           done();
         })
-        .req(function(req) {
-          req.body = {};
-          req.body.username = 'johndoe';
-          req.body.password = 'secret';
-        })
-        .authenticate();
-    });
-
-    it('should error', () =>  {
-      expect(err).to.be.an.instanceof(Error);
-      expect(err.message).to.equal('Freeipa: problem with request: getaddrinfo ENOTFOUND invalid_server invalid_server:443');
-    });
-  });
-
-  describe('will fail with no password is provided', () =>  {
-    var strategy = new Strategy(options, (user, done) => {
-      throw new Error('something went horribly wrong');
-    });
-
-    var err;
-
-    before(function(done) {
-      chai.passport.use(strategy)
-        .fail(function(e) {
-          err = e;
-          done();
-        })
-        .req(function(req) {
+        .req((req) => {
           req.body = {};
           req.body.username = 'johndoe';
         })
         .authenticate();
     });
 
-    it('should fail', () =>  {
-      expect(err.message).to.equal('Freeipa: Missing credentials');
+    it('should fail', () => {
+      expect(err.message).to.equal('Passport-Freeipa: Missing credentials.');
     });
+  });
+
+  describe('will fail with no verify is provided', () => {
+    options.passReqToCallback = true;
+    try {
+      const strategy = new Strategy(options);
+    } catch (error) {
+      expect(error).to.be.an.instanceof(Error);
+      expect(error.message).to.equal('Passport-Freeipa: passReqToCallback is true but no verify provided.');
+    }
+  });
+
+  describe('will fail with missing options', () => {
+    try {
+      const strategy = new Strategy({});
+    } catch (error) {
+      expect(error).to.be.an.instanceof(Error);
+      expect(error.message).to.equal('Passport-Freeipa: requires the node-freeipa options.');
+    }
   });
 });
