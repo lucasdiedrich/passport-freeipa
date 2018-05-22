@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Freeipa username and password authentication strategy for Passport.",
   "main": "src/",
+  "files": [
+    "src"
+  ],
   "scripts": {
     "test": "mocha --reporter spec --require test/bootstrap/node test/*.test.js",
     "test:tdd": "npm run test -- --watch",
