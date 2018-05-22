@@ -1,10 +1,13 @@
 {
   "name": "passport-freeipa",
   "version": "1.0.0",
-  "description": "Handles authentication using Passport and Freeipa and an backend server.",
-  "main": "src/main.js",
+  "description": "Freeipa username and password authentication strategy for Passport.",
+  "main": "src/",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --reporter spec --require test/bootstrap/node test/*.test.js",
+    "test:tdd": "npm run test -- --watch",
+    "test:coverage": "./node_modules/.bin/nyc npm test",
+    "coveralls": "npm run test:coverage && nyc report --reporter=text-lcov | coveralls"
   },
   "repository": {
     "type": "git",
@@ -16,10 +19,23 @@
     "IDM",
     "Auth"
   ],
-  "author": "Lucas Diedrich",
+  "author": {
+    "name": "Lucas Diedrich",
+    "url": "https://http://github.com/lucasdiedrich/"
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/lucasdiedrich/passport-freeipa/issues"
   },
-  "homepage": "https://github.com/lucasdiedrich/passport-freeipa#readme"
+  "homepage": "https://github.com/lucasdiedrich/passport-freeipa#readme",
+  "dependencies": {
+    "node-freeipa": "^2.1.0",
+    "passport": "^0.4.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "chai-passport-strategy": "^1.0.1",
+    "mocha": "^5.1.1",
+    "nyc": "^11.8.0"
+  }
 }
