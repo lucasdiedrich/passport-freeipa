@@ -30,7 +30,8 @@
   "homepage": "https://github.com/lucasdiedrich/passport-freeipa#readme",
   "dependencies": {
     "node-freeipa": "^2.1.0",
-    "passport": "^0.4.0"
+    "passport": "^0.4.0",
+    "passport-strategy": "^1.0.0"
   },
   "devDependencies": {
     "chai": "^4.1.2",

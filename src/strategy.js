@@ -2,10 +2,9 @@
  * Module dependencies.
  */
 const passport = require('passport-strategy');
-const util = require('util');
 const ipa = require('node-freeipa');
 const lookup = require('./lookup');
-const { _extend } = require('util');
+const { _extend, inherits } = require('util');
 
 /**
  * `Strategy` constructor.
@@ -21,43 +20,47 @@ const { _extend } = require('util');
  * `options` can be used to change the fields in which the credentials are found.
  *
  * Options:
- *   - `passReqToCallback`        Freeipa Server FQDN : Required : Optional
- *   - `server`        Freeipa Server FQDN : Required
- *   - `ca`            Path to the CA File : Optional
- *   - `expires`       Time in minutes to expiration of cookie/auth : Optional
+ *   - `freeipa` - All node-freeipa options: https://github.com/lucasdiedrich/node-freeipa#options
+ *   - `usernameField` - Optional
+ *   - `passwordField` - Optional
+ *   - `passReqToCallback` - Optional
  *
  * Examples:
  *
- *     passport.use(new FreeipaStrategy(
- *       { server: 'freeipa.server.domain' },
- *       function(user, done) {
- *         User.findOne({ username: username, password: password }, function (err, user) {
- *           done(err, user);
- *         });
- *       }
- *     ));
+ *     passport.use(new FreeipaStrategy({
+ *       usernameField: '',
+ *       passwordField: '',
+ *       passReqToCallback: '',
+ *       freeipa: {
+ *          server: 'freeipa.server.domain'
+ *       },
+ *     }, function(user, done) {
+ *        return cb(null, user);
+ *     }));
  *
  * @param {Object} options
- * @param {Function} verify
+ * @param {Function} verify - optional
  * @api public
  */
 function Strategy(options, verify) {
-  if (!options || !options.server) { throw new TypeError('FreeipaStrategy requires the server options.'); }
-  if (!verify) { throw new TypeError('FreeipaStrategy requires a verify callback.'); }
+  if (!options || !options.freeipa || !options.freeipa.server) { throw new TypeError('Passport-Freeipa: requires the node-freeipa options.'); }
+  if (!verify && options.passReqToCallback) { throw new TypeError('Passport-Freeipa: passReqToCallback is true but no verify provided.'); }
 
-  this._passReqToCallback = options.passReqToCallback || false;
-  this._freeipaOptions = options;
+  this.freeipaConfig = options.freeipa;
+  this.usernameField = options.usernameField || 'username';
+  this.passwordField = options.passwordField || 'password';
+  this.passReqToCallback = options.passReqToCallback || false;
 
   passport.Strategy.call(this);
 
   this.name = 'freeipa';
-  this._verify = verify;
+  this.verify = verify;
 }
 
 /**
  * Inherit from `passport.Strategy`.
  */
-util.inherits(Strategy, passport.Strategy);
+inherits(Strategy, passport.Strategy);
 
 /**
  * Authenticate request based on the user and password.
@@ -65,36 +68,37 @@ util.inherits(Strategy, passport.Strategy);
  * @param {Object} req
  * @api protected
  */
-Strategy.prototype.authenticate = function(req, options) {
-  var self = this;
+/* eslint consistent-return: [0], func-names: [0]  */
+Strategy.prototype.authenticate = function (req, options = {}) {
+  const self = this;
 
-  options = options || {};
-
-  var username = lookup(req.body, 'username') || lookup(req.query, 'username');
-  var password = lookup(req.body, 'password') || lookup(req.query, 'password');
+  const username = lookup(req.body, this.usernameField) || lookup(req.query, this.usernameField);
+  const password = lookup(req.body, this.passwordField) || lookup(req.query, this.passwordField);
 
   if (!username || !password) {
-    return this.fail({ message: options.badRequestMessage || 'Freeipa: Missing credentials' }, 400);
+    return this.fail({ message: options.badRequestMessage || 'Passport-Freeipa: Missing credentials.' }, 400);
   }
 
   function verified(err, user, info) {
-    if (err || user.error) { return self.error(err); }
+    if (err || user.error) { return self.error(err || user.error); }
     if (!user) { return self.fail(info); }
-    self.success(user, info);
+    return self.success(user, info);
   }
 
-  ipa.configure(_extend(this._freeipaOptions, {auth: { user: username, pass: password }}));
+  ipa.configure(_extend(this.freeipaConfig, { auth: { user: username, pass: password } }));
 
   ipa.user_show([username]).then((user) => {
-
-    if (self._passReqToCallback) {
-      this._verify(req, user, verified);
+    if (this.verify) {
+      if (self.passReqToCallback) {
+        this.verify(req, user, verified);
+      } else {
+        this.verify(user, verified);
+      }
     } else {
-      this._verify(user, verified);
+      self.success(user);
     }
-
   }).catch((error) => {
-    return self.error(error);
+    self.error(error);
   });
 };
 

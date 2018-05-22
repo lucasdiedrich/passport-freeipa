@@ -1,12 +1,13 @@
-module.exports = function (obj, field) {
+module.exports = (obj, field) => {
   if (!obj) { return null; }
 
-  var chain = field.split(']').join('').split('[');
+  const chain = field.split(']').join('').split('[');
 
-  for (var i = 0, len = chain.length; i < len; i++) {
-    var prop = obj[chain[i]];
-    if (typeof(prop) === 'undefined') { return null; }
-    if (typeof(prop) !== 'object') { return prop; }
+  for (let i = 0, len = chain.length; i < len; i += 1) {
+    const prop = obj[chain[i]];
+    if (typeof (prop) === 'undefined') { return null; }
+    if (typeof (prop) !== 'object') { return prop; }
+    /* eslint no-param-reassign: [0] */
     obj = prop;
   }
 
